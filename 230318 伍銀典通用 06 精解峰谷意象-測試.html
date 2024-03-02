@@ -1,0 +1,61 @@
+<style>*{background-color:grey}</style><script src=decimal.js></script>
+<script>
+Decimal.set({precision:100});
+const ONE=Decimal(1),D=x=>document.getElementById(x);
+function generator(n=30,dl=12,a=(n*n*4-1)*n/3,M=[],m=n-1)
+{   // 預算，只為速求最佳頻率，並無他事。但C的平均以及S的斜率須留下！
+  for(let f=0,b=Float64Array.from({length:n},(_,i)=>i*2+1),c,s;(f+=.000244140625)<1;) //  間距 1/4096
+	M.push([  // 目前量體 b 尚無溢位的疑慮
+	  [
+		(c=Array.from(s=b.map(v=>f*v),v=>Decimal.cos(v))).map((c=c.reduce((r,v)=>r.add(v)).div(n),v=>v.sub(c))),
+		(s=Array.from(s,v=>Decimal.sin(v))).map((s=s.reduce((r,v,i)=>v.mul(i*2+1).add(r),0).div(a),(v,i)=>v.sub(s.mul(i*2+1))))
+	  ].map(u=>[u.map((u=ONE.div(Decimal.hypot(...u)),v=>u.mul(v))),u]),
+	  [c,s]
+	].flat(2));
+  return function(
+	o,ce,lv=dl,q=[],p=o.slice(n).map((v,i)=>(q.push((v=Decimal(v)).mul(i=o[m-i]).ln()),v.div(i).ln())),
+	f=M.map(([c,,s])=>(c=Decimal.sum(...q.map((v,i)=>c[i].mul(v))).toNumber())*c+(s=Decimal.sum(...p.map((v,i)=>s[i].mul(v))).toNumber())*s)
+  ){
+	if(lv==1)return f;
+	let[c,l,s,g,k,h]=M[f=f.indexOf(Math.max(...f))];
+	console.log(++f); f/=4096;  // 頻率
+
+	h=Decimal.sum(...p.map((v,i)=>v.mul(i*2+1))).div(a).sub(h.mul(
+	  s=Decimal.sum(...p.map((v,i)=>s[i].mul(v))).mul(g)
+	))   //  s:p  h:a  g:閒
+
+	console.log('直線斜率：'+h);
+
+	k=(p=Decimal.sum(...q).div(n)).sub(k.mul(
+	  c=Decimal.sum(...q.map((v,i)=>c[i].mul(v))).mul(l)
+	));  //  c:q  k:b  l:閒
+
+	// p:波動平衡線  q:閒
+
+	g=Decimal.atan2(c,s);c=(l=Decimal.hypot(c,s)).mul(f);  console.log('震幅：'+l);   //  g:相位  l:震幅  c:導係
+	s=[];for(let j=n*-2-1,e=n*4+1,t;(j+=2)!=e;)s.push([
+		(t=g.add(f*j)).cos().mul(c).add(h), // 微分
+		(t=t.sin().mul(l)).mul(2).add(p),	// 波動意象
+		t.add(h.mul(j)).add(k)				// 趨勢預測
+	]);
+
+	return s.map(([m,w,b],i)=>[
+		o[i]?o[i]/ce+'\t'+Math.log(o[i]):'\t',	// 原始資料、原始對數
+		m.mul(lv).toNumber(),					// 年增率
+		w.toNumber()/2,							// 波動意象
+		b.toNumber()/2							// 擬合
+	].join('\t')).join('\n');
+  }
+}
+
+function mclick()
+{
+	let x=document.querySelector('textarea').value.split('\n').map(v=>v.replace(/[, ]/g,'')).filter(v=>v!='');
+	console.log('['+x+']');
+	// console.log(fiveyears(x.map(v=>parseFloat(v))));
+}
+
+</script>
+
+<table><tr><td><textarea id=t cols=60 rows=30></textarea>
+<td><input id=c><input type=button value=計算 onclick=if(c=D('c').value){t=D('t');y=t.value.split('\n').map(v=&gt;v.replace(/[,&nbsp;]/g,'')).filter(v=&gt;v!='');alert(y.length);t.value='fiveyears(['+y.join()+'],'+c+')';t.select();document.execCommand('copy')}else&nbsp;alert('請輸入單位')>
